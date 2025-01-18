@@ -1,0 +1,262 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Tracker</title>
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="{% static 'css/fullcalendar.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="{% static 'js/fullcalendar.min.js' %}"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(145deg, #f5f7fa, #c3cfe2);
+            color: #333;
+        }
+        header {
+            background-color: #28a745;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        header .btn-primary {
+            background: #ffc107;
+            color: #000;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        header .btn-primary:hover {
+            background: #e0a800;
+        }
+
+        main {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        .filter-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #fefefe;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .filter-section select {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+        }
+        .filter-section button {
+            padding: 8px 15px;
+            background: #007bff;
+            border: none;
+            color: #fff;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+        .filter-section button:hover {
+            background: #0056b3;
+        }
+
+        .calendar-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #calendar {
+            max-width: 100%;
+            background: #f5f5f5;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        table th, table td {
+            text-align: left;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background: #28a745;
+            color: #fff;
+        }
+        table tr:hover {
+            background: #f1f1f1;
+        }
+        .badge {
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .badge-danger {
+            background-color: #dc3545;
+        }
+        .badge-warning {
+            background-color: #ffc107;
+            color: #000;
+        }
+        .badge-success {
+            background-color: #28a745;
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px;
+            background: #333;
+            color: #fff;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <h1><i class="fas fa-calendar-check"></i> Activity Tracker</h1>
+        <a href="{% url 'activity_add' %}" class="btn-primary"><i class="fas fa-plus-circle"></i> Add New Activity</a>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Filter Section -->
+        <section class="filter-section">
+            <h2><i class="fas fa-filter"></i> Filter Activities</h2>
+            <form method="GET" action="">
+                <label for="filter">Priority:</label>
+                <select name="priority" id="filter">
+                    <option value="">All</option>
+                    <option value="H" {% if request.GET.priority == 'H' %}selected{% endif %}>High</option>
+                    <option value="M" {% if request.GET.priority == 'M' %}selected{% endif %}>Medium</option>
+                    <option value="L" {% if request.GET.priority == 'L' %}selected{% endif %}>Low</option>
+                </select>
+                <button type="submit"><i class="fas fa-search"></i> Apply Filter</button>
+            </form>
+        </section>
+
+        <!-- Calendar Section -->
+        <section class="calendar-section">
+            <h2><i class="far fa-calendar-alt"></i> Calendar</h2>
+            <div id="calendar"></div>
+        </section>
+
+        <!-- Activity Table -->
+        <section>
+            <h2><i class="fas fa-list"></i> Upcoming Activities</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in activities %}
+                        <tr>
+                            <td>{{ activity.title }}</td>
+                            <td>{{ activity.get_category_display }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if activity.get_priority_display == 'High' %}badge-danger{% elif activity.get_priority_display == 'Medium' %}badge-warning{% else %}badge-success{% endif %}">
+                                    {{ activity.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>{{ activity.start_time }}</td>
+                            <td>{{ activity.end_time }}</td>
+                            <td>
+                                {% if activity.is_completed %}
+                                    <span class="badge badge-success">Completed</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not activity.is_completed %}
+                                    <button onclick="confirmComplete({{ activity.id }})" class="btn btn-success">
+                                        <i class="fas fa-check-circle"></i> Mark as Completed
+                                    </button>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Activity Tracker | Designed with <i class="fas fa-heart"></i> and <i class="fas fa-code"></i></p>
+    </footer>
+
+    <script>
+        // Initialize Calendar
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarEl = document.getElementById('calendar');
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                events: [
+                    {% for activity in activities %}
+                        {
+                            title: "{{ activity.title }}",
+                            start: "{{ activity.start_time|date:'Y-m-d H:i:s' }}",
+                            end: "{{ activity.end_time|date:'Y-m-d H:i:s' }}",
+                            backgroundColor: "{{ activity.get_priority_display|lower }}" === 'high' ? '#dc3545' : "{{ activity.get_priority_display|lower }}" === 'medium' ? '#ffc107' : '#28a745',
+                            textColor: '#FFFFFF',
+                        },
+                    {% endfor %}
+                ]
+            });
+            calendar.render();
+        });
+
+        // Mark as Complete
+        function confirmComplete(eventId) {
+            const confirmAction = confirm("Are you sure you want to mark this activity as completed?");
+            if (confirmAction) {
+                window.location.href = `/complete/${eventId}/`;
+            }
+        }
+    </script>
+</body>
+</html>
